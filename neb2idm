@@ -1,0 +1,39 @@
+#!/bin/bash
+# Written by Rodrigo García-Muelas
+# ICIQ - Tarragona, Spain. 22/01/2015
+#
+# Legend:
+# $1 : Path to NEB calculation, exclude rightmost /
+# $2 : Path to IDM folder [OPTIONAL]
+
+
+if    [ -d  $1 ] ; then # 999 
+
+dir0=$PWD
+
+if    [     $2 ] ; then # Second argument exists
+   if [ -d  $2 ] ; then # Second argument is a valid directory
+      cd    $2
+      dir2="$PWD"
+      cd    $dir0
+   else
+      echo "$2 is not a directory. The output will be written here: $PWD/POSCAR"
+      dir2="$PWD"
+   fi 
+else
+      dir2="$PWD" 
+fi
+#echo $dir2
+
+# Go to the NEB folder, generate dimer, and put it in the output folder
+      cd    $1 
+      dir1="$PWD"
+      ~/bin/neb2dim-rgarcia.pl
+      cd    $dir0
+      mv    $dir1/dim/POSCAR  $dir2
+      mv    $dir1/dim/MODECAR $dir2/modecar.txt
+
+
+else  # 999
+      echo "Valid input folder not specified"
+fi    # 999
