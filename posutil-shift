@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# Read POSCAR
+# Rodrigo García-Muelas
+# Feb 21, 2013. Tarragona.
+#
+# INPUT
+# $1 Input file
+# $2 Output file
+# $3-5 shift on x,y,z
+# 
+# Indexes
+# a number of line
+# b number of column
+# c number of lattice vector, related to a
+# d number of element, related to a
+#
+# VECTORS
+# lattice
+# element 
+# numelem
+# coordin
+#
+
+a=0
+totalelem=0
+totalatom=0
+shiftx=$3 ; shifty=$4 ; shiftz=$5
+
+while read linea ; do   ##### 1 #####
+a=$(($a+1)) ; b=0 ; d=$(($a-9)) ; line[$a]=$linea ;
+# echo $a; #echo $line;  if [ $a -lt 10 ] ; then  echo "${line[$a]}" ;  fi
+
+for word in ${line[$a]} ; do   ##### 2 #####
+b=$(($b+1))
+#if [ $a -lt 10 ] ; then echo "previous to case a is $a" ; fi
+
+case $a in
+1) title=${line[$a]} ;;
+2) scaling=$word ;;
+[3-5])  c=$(($a-2)) ; lattice[$c$b]=$word ;; #; echo "coordinates $c $b $word ${lattice[$c$b]}" 
+6) totalelem=$(($totalelem+1)) ; element[$b]=$word ;;
+7) numelem[$b]=$word ; totalatom=$(($totalatom+$word))  ;;
+8) selective=${line[$a]} ;;
+9) directcartesian=${line[$a]} ;;
+*) coord[$d$b]=$word ;; # echo "${coord[$d$b]}" ;;
+esac
+
+#if [ $a -lt 10 ] ; then echo "word value is $word" ; fi
+
+done ##### 2 #####
+
+done < "$1"  ##### 1 #####
+
+# Print POSCAR
+
+touch $2
+echo "$title " >$2
+echo "$scaling " >>$2
+echo "${lattice[11]}  ${lattice[12]}  ${lattice[13]} " >>$2
+echo "${lattice[21]}  ${lattice[22]}  ${lattice[23]} " >>$2 
+echo "${lattice[31]}  ${lattice[32]}  ${lattice[33]} " >>$2
+echo "${element[1]}  ${element[2]}  ${element[3]}  ${element[4]}  ${element[5]}  ${element[6]}  ${element[7]}  ${element[8]}  ${element[9]}  ${element[10]}  ${element[11]}  ${element[12]}  ${element[13]}  ${element[14]}  ${element[15]}  ${element[16]}  ${element[17]}  ${element[18]}  ${element[19]}  ${element[20]} " >>$2
+echo "${numelem[1]}  ${numelem[2]}  ${numelem[3]}  ${numelem[4]}  ${numelem[5]}  ${numelem[6]}  ${numelem[7]}  ${numelem[8]}  ${numelem[9]}  ${numelem[10]}  ${numelem[11]}  ${numelem[12]}  ${numelem[13]}  ${numelem[14]}  ${numelem[15]}  ${numelem[16]}  ${numelem[17]}  ${numelem[18]}  ${numelem[19]}  ${numelem[20]} " >>$2
+echo "$selective " >>$2
+echo "$directcartesian " >>$2
+d=0 ; until [ $d -eq $(($totalatom*10)) ] ; do 
+d=$(($d+10)) ; # echo "$shiftx $shifty $shiftz";
+coord[$(($d+1))]=`echo "scale=16; ${coord[$(($d+1))]}+$shiftx" | bc -l` ; # echo "scale=16; ${coord[$(($d+1))]}+shiftx" | bc -l
+coord[$(($d+2))]=`echo "scale=16; ${coord[$(($d+2))]}+$shifty" | bc -l`
+coord[$(($d+3))]=`echo "scale=16; ${coord[$(($d+3))]}+$shiftz" | bc -l`
+echo "${coord[$(($d+1))]}  ${coord[$(($d+2))]}  ${coord[$(($d+3))]}  ${coord[$(($d+4))]}  ${coord[$(($d+5))]}  ${coord[$(($d+6))]}  " >>$2 ; done
+echo " " >>$2
+
+echo "Coordinates shift $shiftx $shifty $shiftz succesfully applied to  $1 >> $2 " 
+ 
