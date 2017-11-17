@@ -1,0 +1,29 @@
+#!/bin/bash
+# Rodrigo García Muelas
+# July 6th, 2016
+# 
+# Convert a POSCAR 5.x from direct to cartesians
+#
+# INPUT: 
+# $1   : Input  file
+# $2   : Output file (optional, default $1.cart)
+
+# Remove any .cart file, just in case
+rm -f $1.cart
+
+# Take the species from line 6 into line 1
+specs=`head -n 6 $1 | tail -n 1`
+sed -i "1s/.*/ $specs /" $1
+
+# Convert to cartesians uisg vasputil
+~/bin/vasputil_direct2cartesian $1
+
+# Convert from VASP 4x to 5x by adding species into line 6 
+sed -i  "6i\
+    $specs \
+" $1.cart 
+
+# If an output file is specified, mv .cart to $2
+if [ -n "$2" ] ; then 
+   mv -f $1.cart $2
+fi
