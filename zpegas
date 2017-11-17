@@ -1,0 +1,53 @@
+#!/bin/bash
+# Zero-point vibrational energies for gas molecules
+# Rodrigo García-Muelas
+# Dec 2, 2016. Tarragona.
+# 
+# This program computes the zpe from the OUTCAR file
+# If zpe-gas.dat is provided, its only parametre 
+# is how many vibrational modes will be removed 
+# Use 5 for linear molecules and 6 for nonlinear ones
+# 
+# INPUT
+# $1 zpe-gas.dat 
+
+if  [ -e zpe-gas.dat ] ; then
+touch zpe-gas.dat
+else
+echo "zpe-gas.dat not provided. zpve were not calculated on $PWD"
+echo "That file must contain degrees of freedom to be removed:"
+echo "5 for linear molecules, 6 for nonlinear molecules."
+exit 0
+fi
+
+# Total number of frequencies calculated
+free1=`grep cm-1 OUTCAR | wc -l`
+
+# Vibrational modes to be cut 
+free2=`cat zpe-gas.dat`
+
+# Vibrational modes to be added
+free3=$(($free1-$free2))
+#echo  $free3
+
+# Check that the number of degrees of freedom is correct
+if [[ $free3 -lt 1 ]] ; then
+echo "The molecule had $free1 degres of freedom and you are removing "
+echo "$free2 vibrational modes from the kernel. Exiting. "
+exit 
+fi
+
+# echo  $free1 $free2 $free3
+# Extracting frequencies to be added
+touch frq.dat && rm -f frq.dat
+grep cm-1 OUTCAR | head -n $free3 | awk '{print $10}' >> frq.dat
+
+# Adding up energies
+d=0 ; sum=0 ; until [ $d -eq $free3 ] ; do 
+d=$(($d+1))
+add=`sed "${d}q;d" frq.dat` 
+sum=`echo "scale=16; 0.0005*$add+$sum " | bc -l`
+#echo add $add sum $sum
+done
+
+echo $sum
