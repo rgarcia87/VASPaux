@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# Read POSCAR
+# Rodrigo García-Muelas
+# Mar 04, 2013. Tarragona.
+#
+# INPUT
+# $1 Title (line 1) of output file
+# $2 Input file 1
+# $3 Input file 2
+# $4 Output file 
+# $5 (Vacant)
+# 
+# Indexes
+# a number of line
+# b number of column
+# c number of lattice vector, related to a | number of element for second file
+# d number of element, related to a | number of atom
+#
+# VECTORS
+# lattice
+# element 
+# numelem
+# coordin
+#
+
+a=0 
+totalelem=0
+totalatom=0
+
+####### FILE 1 #######
+d=0
+while read linea ; do                   ##### 1 #####
+a=$(($a+1)) ; b=0 ; line[$a]=$linea ;
+for word in ${line[$a]} ; do            ##### 2 #####
+b=$(($b+1))
+case $a in
+1) title=${line[$a]} ;;
+2) scaling=$word ;;
+[3-5])  c=$(($a-2)) ; lattice[$c$b]=$word ;; 
+6) totalelem=$(($totalelem+1)) ; element[$b]=$word ;;
+7) numelem[$b]=$word ; totalatom=$(($totalatom+$word)) ;;
+8) selective=${line[$a]} ;;
+9) directcartesian=${line[$a]} ;;
+*) if [ $b == 1 ] ; then  d=$(($d+1)) ; fi ; coord[$d$b]=$word ;; 
+esac 
+done                                    ##### 2 #####
+done < "$2"                             ##### 1 #####
+
+####### FILE 1 #######
+#--------------------#
+####### FILE 2 #######
+a=0 ; c=$totalelem ; d=$totalatom 
+while read linea ; do                   ##### 1 #####
+a=$(($a+1)) ; b=0 ; line[$a]=$linea ; 
+for word in ${line[$a]} ; do            ##### 2 #####
+b=$(($b+1))
+case $a in
+1) title=${line[$a]} ;;
+2) comp=`echo "$word-$scaling" | bc -l ` ; if [ $comp != 0 ] ; then echo "Error! scaling parameters do not match" ; exit ; fi ;;
+[3-5]) nada=$word ;; 
+6) totalelem=$(($totalelem+1)) ; element[$totalelem]=$word ;;
+7) c=$(($c+1)) ; numelem[$c]=$word ; totalatom=$(($totalatom+$word))  ;;
+8) if [ "$selective" != "${line[$a]}" ] ; then echo "Error in Selective dynamics? " ; fi ;;
+9) if [ $directcartesian != ${line[$a]} ] ; then echo "Fatal error: mixed Direct and Cartesian coordinates" ; exit ; fi ;;
+*) if [ $b == 1 ] ; then  d=$(($d+1)) ; fi ; coord[$d$b]=$word ;; 
+esac 
+done                                    ##### 2 #####
+done < "$3"                             ##### 1 #####
+
+####### FILE 2 #######
+#--------------------#
+####### OUTPUT #######
+
+title=$1
+touch $4
+echo "$title " >$4
+echo "$scaling " >>$4
+echo "${lattice[11]}  ${lattice[12]}  ${lattice[13]} " >>$4
+echo "${lattice[21]}  ${lattice[22]}  ${lattice[23]} " >>$4 
+echo "${lattice[31]}  ${lattice[32]}  ${lattice[33]} " >>$4
+echo "${element[1]}  ${element[2]}  ${element[3]}  ${element[4]}  ${element[5]}  ${element[6]}  ${element[7]}  ${element[8]}  ${element[9]}  ${element[10]}  ${element[11]}  ${element[12]}  ${element[13]}  ${element[14]}  ${element[15]}  ${element[16]}  ${element[17]}  ${element[18]}  ${element[19]}  ${element[20]} " >>$4
+echo "${numelem[1]}  ${numelem[2]}  ${numelem[3]}  ${numelem[4]}  ${numelem[5]}  ${numelem[6]}  ${numelem[7]}  ${numelem[8]}  ${numelem[9]}  ${numelem[10]}  ${numelem[11]}  ${numelem[12]}  ${numelem[13]}  ${numelem[14]}  ${numelem[15]}  ${numelem[16]}  ${numelem[17]}  ${numelem[18]}  ${numelem[19]}  ${numelem[20]} " >>$4
+echo "$selective " >>$4
+echo "$directcartesian " >>$4
+d=0 ; until [ $d -eq $(($totalatom*10)) ] ; do d=$(($d+10)) ; echo "${coord[$(($d+1))]}  ${coord[$(($d+2))]}  ${coord[$(($d+3))]}  ${coord[$(($d+4))]}  ${coord[$(($d+5))]}  ${coord[$(($d+6))]}  " >>$4 ; done
+echo " " >>$4
